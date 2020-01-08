@@ -40,7 +40,7 @@ object WebSocketStream {
       implicit system: ActorSystem,
       materializer: ActorMaterializer,
       executionContext: ExecutionContextExecutor)
-    : (ActorRef, Source[InternalFlowObject, NotUsed]) = {
+    : (ActorRef, Source[ParsedMessage, NotUsed]) = {
     val (actorRef, source) =
       Source
         .actorRef[InternalFlowObject](bufferSize = 1000, OverflowStrategy.fail)
@@ -56,7 +56,7 @@ object WebSocketStream {
                                   -1) { () =>
           Source.fromGraph(webSocketFlowGraph(options, source))
         }
-      } else source
+      } else Source.fromGraph(webSocketFlowGraph(options, source))
 
     (actorRef, allSource)
   }
@@ -66,7 +66,7 @@ object WebSocketStream {
       implicit system: ActorSystem,
       materializer: ActorMaterializer,
       executionContext: ExecutionContextExecutor)
-    : Graph[SourceShape[InternalFlowObject], NotUsed] =
+    : Graph[SourceShape[ParsedMessage], NotUsed] =
     GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
 
@@ -74,9 +74,7 @@ object WebSocketStream {
       val broadcast = builder.add(Broadcast[InternalFlowObject](3))
 
       val webSocketHandlerFlow = Flow[InternalFlowObject].collect {
-        case InternalException(e) =>
-          println("webSocketHandlerFlow ConnectionFailed")
-          throw new Exception(e)
+        case InternalException(e) => throw new Exception(e)
         case m: SendMessage => m
       }
 
@@ -103,19 +101,15 @@ object WebSocketStream {
                 .completionTimeout(10.seconds)
                 .runFold("")(_ + _)
                 .flatMap(msg => Future.successful(ParsedMessage(msg)))
-            case ReceivedMessage(other) =>
-              Future.successful(
-                InternalException(s"Receive Strange Data: $other"))
           }
-          .mapAsync(parallelism = 3)(identity)
+          .mapAsync(parallelism = 16)(identity)
+          .filterNot(_.value == options.pongData)
       )
 
       val callBackFilterMapFlow = builder.add(
         Flow[InternalFlowObject].collect {
           case ConnectionOpened => SendMessage(options.initMessage)
-          case a: InternalException =>
-            println("callBackFilterMapFlow InternalException")
-            a
+          case a: InternalException => a
         }
       )
 
@@ -175,12 +169,7 @@ object WebSocketStream {
       import GraphDSL.Implicits._
       val merge = builder.add(Merge[InternalFlowObject](2))
       val parseFlow = builder.materializedValue via Flow[ConnectionOpenedFuture]
-        .mapAsync[InternalFlowObject](parallelism = 2)(f => {
-          val future =
-            f.value
-          future.onComplete(a => println(s"parseFlow: $a"))
-          future
-        })
+        .mapAsync[InternalFlowObject](parallelism = 2)(_.value)
       parseFlow ~> merge
       flow.out ~> merge
       FlowShape(flow.in, merge.out)
