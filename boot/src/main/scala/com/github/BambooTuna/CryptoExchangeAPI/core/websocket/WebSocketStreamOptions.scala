@@ -4,8 +4,9 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration._
 
-case class WebSocketOptions(
+case class WebSocketStreamOptions(
     host: String = "",
+    initMessage: String = "",
     reConnect: Boolean = true,
     reConnectInterval: FiniteDuration = 5.seconds,
     pingInterval: FiniteDuration = 5.seconds,
@@ -14,6 +15,4 @@ case class WebSocketOptions(
     logger: Logger = LoggerFactory.getLogger("WebSocketManager")
 ) {
   require(pingTimeout > pingInterval)
-  val initMessage: String =
-    """{"method":"subscribe","params":{"channel":"lightning_executions_FX_BTC_JPY"}}"""
 }

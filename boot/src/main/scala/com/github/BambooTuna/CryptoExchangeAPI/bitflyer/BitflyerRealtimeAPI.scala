@@ -28,7 +28,7 @@ class BitflyerRealtimeAPI(implicit system: ActorSystem,
 //  val webSocketManager = system.actorOf(
 //    Props(
 //      classOf[WebSocketManager],
-//      WebSocketOptions(host = "wss://ws.lightstream.bitflyer.com/json-rpc")),
+//      WebSocketStreamOptions(host = "wss://ws.lightstream.bitflyer.com/json-rpc")),
 //    WebSocketManager.ActorName)
 //
 //  val flow = Flow[Receive].ask(parallelism = 5)(webSocketManager)
