@@ -18,8 +18,12 @@ object Main extends App {
 
   val sink = Sink.foreach[String](println)
   realtimeAPI.runBySink(sink)
+  Thread.sleep(6000)
   realtimeAPI.sendMessage(
-    realtimeAPI.subscribeMessage(FXBTCJPYExecutions)
+    realtimeAPI.subscribeMessage(ChildOrderEvents)
+  )
+  realtimeAPI.sendMessage(
+    realtimeAPI.subscribeMessage(ParentOrderEvents)
   )
 
 }

@@ -1,18 +1,20 @@
 package com.github.BambooTuna.CryptoExchangeAPI.bitflyer
 
-import java.util.UUID
-
 import com.github.BambooTuna.CryptoExchangeAPI.core.domain.ApiAuth
 import io.circe.Encoder
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 object BitflyerRealtimeAPIProtocol {
-  case class SubscribeCommand[Params](method: String, params: Params)
+
+  case class SubscribeCommand[Params](jsonrpc: String = "2.0",
+                                      method: String,
+                                      params: Params,
+                                      id: Option[Int])
   object SubscribeAuthParams {
     def create(apiAuth: ApiAuth): SubscribeAuthParams = {
       val timestamp = java.time.Instant.now().toEpochMilli
-      val nonce = UUID.randomUUID.toString
+      val nonce = java.util.UUID.randomUUID.toString.replaceAll("-", "")
       val signature =
         SubscribeAuthParams.HMACSHA256(s"$timestamp$nonce", apiAuth.secret)
       SubscribeAuthParams(apiAuth.key, timestamp, nonce, signature)
@@ -31,7 +33,7 @@ object BitflyerRealtimeAPIProtocol {
   }
   case class SubscribeAuthParams(api_key: String,
                                  timestamp: Long,
-                                 nonce: String = UUID.randomUUID.toString,
+                                 nonce: String,
                                  signature: String)
 
   sealed class Channel(val channel: String)

@@ -44,7 +44,7 @@ class BitflyerRealtimeAPI(apiAuth: Option[ApiAuth])(
     host = "wss://ws.lightstream.bitflyer.com/json-rpc",
     pongData =
       """{"jsonrpc":"2.0","error":{"code":-32700,"message":"Parse error","data":"Invalid JSON"},"id":null}""",
-    initMessage = apiAuth.map(authMessage)
+    initMessage = apiAuth.map(a => authMessage(a, id = 1))
   )
   private val (ws: ActorRef, source: Source[ParsedMessage, NotUsed]) =
     WebSocketStream.generateWebSocketFlowGraph(options)
@@ -57,12 +57,15 @@ class BitflyerRealtimeAPI(apiAuth: Option[ApiAuth])(
   def sendMessage(message: String): Unit =
     ws ! SendMessage(message)
 
-  def subscribeMessage(channel: Channel): String =
-    SubscribeCommand[Channel]("subscribe", channel).asJson.noSpaces
+  def subscribeMessage(channel: Channel, id: Option[Int] = None): String =
+    SubscribeCommand[Channel](method = "subscribe", params = channel, id = id).asJson.noSpaces
 
-  def authMessage(apiAuth: ApiAuth): String =
-    SubscribeCommand[SubscribeAuthParams](
-      "auth",
-      SubscribeAuthParams.create(apiAuth)).asJson.noSpaces
+  def authMessage(apiAuth: ApiAuth, id: Int): String =
+    SubscribeCommand[SubscribeAuthParams](method = "auth",
+                                          params =
+                                            SubscribeAuthParams.create(apiAuth),
+                                          id = Some(id)).asJson.noSpaces
+
+  def messageParser(message: String): String = ""
 
 }

@@ -75,7 +75,7 @@ object WebSocketStream {
 
       val webSocketHandlerFlow = Flow[InternalFlowObject].collect {
         case InternalException(e) => throw new Exception(e)
-        case m: SendMessage => m
+        case m: SendMessage       => m
       }
 
       val webSocketFilterMapFlow = Flow[InternalFlowObject].collect {
