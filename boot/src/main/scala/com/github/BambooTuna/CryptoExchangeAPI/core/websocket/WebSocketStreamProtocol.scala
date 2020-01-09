@@ -14,5 +14,6 @@ object WebSocketStreamProtocol {
       extends InternalFlowObject
   case object ConnectionOpened extends InternalFlowObject
   case class InternalException(value: String) extends InternalFlowObject
+  case object NotUsedObject extends InternalFlowObject
 
 }

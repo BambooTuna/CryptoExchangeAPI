@@ -108,7 +108,8 @@ object WebSocketStream {
 
       val callBackFilterMapFlow = builder.add(
         Flow[InternalFlowObject].collect {
-          case ConnectionOpened => SendMessage(options.initMessage)
+          case ConnectionOpened =>
+            options.initMessage.map(SendMessage).getOrElse(NotUsedObject)
           case a: InternalException => a
         }
       )
