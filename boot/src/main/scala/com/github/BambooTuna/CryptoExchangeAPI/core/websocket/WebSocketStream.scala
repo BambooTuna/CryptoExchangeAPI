@@ -118,7 +118,10 @@ object WebSocketStream {
         Flow[InternalFlowObject].collectType[ReceivedMessage]
       val regularMonitoringFlow =
         Flow
-          .fromGraph(createRegularMonitoringFlow[ReceivedMessage]())
+          .fromGraph(
+            createRegularMonitoringFlow[ReceivedMessage](
+              pingInterval = options.pingInterval,
+              pingTimeout = options.pingTimeout))
           .keepAlive(options.pingInterval, () => SendMessage(options.pingData))
 
       source ~> marge ~> handledWebSocketFlow ~> broadcast ~> parseMessageFlow
@@ -128,24 +131,23 @@ object WebSocketStream {
       SourceShape(parseMessageFlow.out)
     }
 
-  private def createRegularMonitoringFlow[In](bufferSize: Int = 30,
-                                              timeout: FiniteDuration =
-                                                30.seconds) = {
-    require(bufferSize > 0)
+  private def createRegularMonitoringFlow[In](pingInterval: FiniteDuration,
+                                              pingTimeout: FiniteDuration)
+    : Graph[FlowShape[In, InternalException], NotUsed] = {
     GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
-      val throttleInterval = timeout / bufferSize
+      val bufferSize = (pingTimeout / pingInterval).toInt
 
       val mainFlow = builder.add(
         Flow[In].buffer(size = bufferSize, OverflowStrategy.dropHead))
 
-      val subSource = Source.repeat(1).throttle(1, throttleInterval)
+      val subSource = Source.repeat(1).throttle(1, pingInterval)
       val subFlow = Flow[Int].buffer(size = bufferSize, OverflowStrategy.fail)
 
       val mergeZip = builder.add(Zip[In, Int])
       val takeFlow = builder.add(
         Flow[(In, Int)]
-          .throttle(1, throttleInterval)
+          .throttle(1, pingInterval)
           .map(_._1)
           .collect[InternalException] {
             case e: InternalException => e

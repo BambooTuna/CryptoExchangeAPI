@@ -13,7 +13,8 @@ object BitflyerRealtimeAPIProtocol {
     def create(apiAuth: ApiAuth): SubscribeAuthParams = {
       val timestamp = java.time.Instant.now().toEpochMilli
       val nonce = UUID.randomUUID.toString
-      val signature = SubscribeAuthParams.HMACSHA256(s"$timestamp$nonce", apiAuth.secret)
+      val signature =
+        SubscribeAuthParams.HMACSHA256(s"$timestamp$nonce", apiAuth.secret)
       SubscribeAuthParams(apiAuth.key, timestamp, nonce, signature)
     }
 
@@ -28,15 +29,21 @@ object BitflyerRealtimeAPIProtocol {
           l + Integer.toString((r & 0xff) + 0x100, 16).substring(1))
     }
   }
-  case class SubscribeAuthParams(api_key: String, timestamp: Long, nonce: String = UUID.randomUUID.toString, signature: String)
+  case class SubscribeAuthParams(api_key: String,
+                                 timestamp: Long,
+                                 nonce: String = UUID.randomUUID.toString,
+                                 signature: String)
 
   sealed class Channel(val channel: String)
   case object BTCJPYExecutions extends Channel("lightning_executions_BTC_JPY")
-  case object FXBTCJPYExecutions extends Channel("lightning_executions_FX_BTC_JPY")
+  case object FXBTCJPYExecutions
+      extends Channel("lightning_executions_FX_BTC_JPY")
   case object BTCJPYBoard extends Channel("lightning_board_BTC_JPY")
   case object FXBTCJPYBoard extends Channel("lightning_board_FX_BTC_JPY")
-  case object BTCJPYBoardSnapshot extends Channel("lightning_board_snapshot_BTC_JPY")
-  case object FXBTCJPYBoardSnapshot extends Channel("lightning_board_snapshot_FX_BTC_JPY")
+  case object BTCJPYBoardSnapshot
+      extends Channel("lightning_board_snapshot_BTC_JPY")
+  case object FXBTCJPYBoardSnapshot
+      extends Channel("lightning_board_snapshot_FX_BTC_JPY")
 
   case object ChildOrderEvents extends Channel("child_order_events")
   case object ParentOrderEvents extends Channel("parent_order_events")

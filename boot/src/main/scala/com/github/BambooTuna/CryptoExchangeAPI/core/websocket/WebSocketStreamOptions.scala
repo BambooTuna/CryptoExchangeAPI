@@ -10,7 +10,7 @@ case class WebSocketStreamOptions(
     reConnect: Boolean = true,
     reConnectInterval: FiniteDuration = 5.seconds,
     pingInterval: FiniteDuration = 5.seconds,
-    pingTimeout: FiniteDuration = 10.seconds,
+    pingTimeout: FiniteDuration = 30.seconds,
     pingData: String = "ping",
     pongData: String = "pong",
     logger: Logger = LoggerFactory.getLogger("WebSocketManager")
