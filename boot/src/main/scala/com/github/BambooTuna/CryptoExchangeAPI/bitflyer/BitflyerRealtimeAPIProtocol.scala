@@ -1,5 +1,6 @@
 package com.github.BambooTuna.CryptoExchangeAPI.bitflyer
 
+import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.BitflyerEnumDefinition.{OrderType, ProductCode, Side}
 import com.github.BambooTuna.CryptoExchangeAPI.core.domain.ApiAuth
 import io.circe.Encoder
 import javax.crypto.Mac
@@ -53,4 +54,22 @@ object BitflyerRealtimeAPIProtocol {
   implicit val encodeUser: Encoder[Channel] =
     Encoder.forProduct1("channel")(_.channel)
 
+
+
+
+  trait JsonRpc {
+    val jsonrpc: String = "2.0"
+
+  }
+  trait JsonRpcId extends JsonRpc {
+    val id: Option[Int] = None
+  }
+  case class SignatureResult(result: Boolean) extends JsonRpcId
+  case class ReceivedChannelMessage[Params](method: String = "channelMessage", params: Params) extends JsonRpc
+
+  case class ExecutionsChannelParams(channel: String, message: List[ExecutionsData])
+  case class ExecutionsData(id: Long, side: Side, price: Long, size: BigDecimal, exec_date: String, buy_child_order_acceptance_id: String, sell_child_order_acceptance_id: String)
+
+  case class OrderEventsChannelParams(channel: String, message: List[ChildOrderEventData])
+  case class ChildOrderEventData(product_code: ProductCode, child_order_id: String, child_order_acceptance_id: String, event_date: String, event_type: String, child_order_type: OrderType, side: Side, price: Long, size: BigDecimal, expire_date: String)
 }

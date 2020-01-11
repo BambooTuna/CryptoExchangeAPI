@@ -16,14 +16,23 @@ object Main extends App {
 
   val realtimeAPI = BitflyerRealtimeAPI(ApiAuth("", ""))
 
-  val sink = Sink.foreach[String](println)
-  realtimeAPI.runBySink(sink)
-  Thread.sleep(6000)
-  realtimeAPI.sendMessage(
-    realtimeAPI.subscribeMessage(ChildOrderEvents)
-  )
-  realtimeAPI.sendMessage(
-    realtimeAPI.subscribeMessage(ParentOrderEvents)
-  )
+  val parsedMessageSink = Sink.foreach[String] { s =>
+    println(s"parsedMessageSink: $s")
+    if (s == """{"jsonrpc":"2.0","id":1,"result":true}""") {
+      realtimeAPI.sendMessage(
+        realtimeAPI.subscribeMessage(ChildOrderEvents)
+      )
+      realtimeAPI.sendMessage(
+        realtimeAPI.subscribeMessage(ParentOrderEvents)
+      )
+    }
+
+    if (s == "ConnectionOpened") {
+      realtimeAPI.sendMessage(
+        realtimeAPI.subscribeMessage(BTCJPYExecutions)
+      )
+    }
+  }
+  realtimeAPI.runBySink(parsedMessageSink)
 
 }

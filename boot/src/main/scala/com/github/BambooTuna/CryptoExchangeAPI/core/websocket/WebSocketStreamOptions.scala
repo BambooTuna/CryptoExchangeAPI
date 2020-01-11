@@ -6,7 +6,6 @@ import scala.concurrent.duration._
 
 case class WebSocketStreamOptions(
     host: String = "",
-    initMessage: Option[String] = None,
     reConnect: Boolean = true,
     reConnectInterval: FiniteDuration = 5.seconds,
     pingInterval: FiniteDuration = 5.seconds,

@@ -12,9 +12,7 @@ object WebSocketStreamSample extends App {
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
   val options = WebSocketStreamOptions(
-    host = "wss://ws.lightstream.bitflyer.com/json-rpc",
-    initMessage = Some(
-      """{"method":"subscribe","params":{"channel":"lightning_executions_FX_BTC_JPY"}}""")
+    host = "wss://ws.lightstream.bitflyer.com/json-rpc"
   )
   val (actorRef, source) = WebSocketStream.generateWebSocketFlowGraph(options)
   val runner = source to Sink.foreach(println)

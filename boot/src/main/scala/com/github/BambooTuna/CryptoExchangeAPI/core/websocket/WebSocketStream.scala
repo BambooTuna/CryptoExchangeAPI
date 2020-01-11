@@ -18,6 +18,7 @@ import akka.stream.scaladsl.{
   Keep,
   Merge,
   RestartSource,
+  Sink,
   Source,
   Zip
 }
@@ -40,7 +41,7 @@ object WebSocketStream {
       implicit system: ActorSystem,
       materializer: ActorMaterializer,
       executionContext: ExecutionContextExecutor)
-    : (ActorRef, Source[ParsedMessage, NotUsed]) = {
+    : (ActorRef, Source[InternalFlowObject, NotUsed]) = {
     val (actorRef, source) =
       Source
         .actorRef[InternalFlowObject](bufferSize = 1000, OverflowStrategy.fail)
@@ -61,12 +62,34 @@ object WebSocketStream {
     (actorRef, allSource)
   }
 
+  def addCompleteSink(completeSink: Sink[ConnectionOpened.type, Any])
+    : Graph[FlowShape[InternalFlowObject, String], NotUsed] = {
+    GraphDSL.create() { implicit builder =>
+      import GraphDSL.Implicits._
+      val broadcast = builder.add(Broadcast[InternalFlowObject](2))
+
+      val parsedMessageFilterFlow = builder.add(
+        Flow[InternalFlowObject].collect {
+          case ParsedMessage(value) => value
+          case ConnectionOpened => "ConnectionOpened"
+        }
+      )
+      val completeFilterFlow = Flow[InternalFlowObject]
+        .collectType[ConnectionOpened.type]
+
+      broadcast ~> parsedMessageFilterFlow
+      broadcast ~> completeFilterFlow ~> completeSink
+
+      FlowShape(broadcast.in, parsedMessageFilterFlow.out)
+    }
+  }
+
   private def webSocketFlowGraph(options: WebSocketStreamOptions,
                                  source: Source[InternalFlowObject, NotUsed])(
       implicit system: ActorSystem,
       materializer: ActorMaterializer,
       executionContext: ExecutionContextExecutor)
-    : Graph[SourceShape[ParsedMessage], NotUsed] =
+    : Graph[SourceShape[InternalFlowObject], NotUsed] =
     GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
 
@@ -101,15 +124,14 @@ object WebSocketStream {
                 .completionTimeout(10.seconds)
                 .runFold("")(_ + _)
                 .flatMap(msg => Future.successful(ParsedMessage(msg)))
+            case ConnectionOpened => Future.successful(ConnectionOpened)
           }
           .mapAsync(parallelism = 16)(identity)
-          .filterNot(_.value == options.pongData)
+          .filterNot(_ == ParsedMessage(options.pongData))
       )
 
       val callBackFilterMapFlow = builder.add(
         Flow[InternalFlowObject].collect {
-          case ConnectionOpened =>
-            options.initMessage.map(SendMessage).getOrElse(NotUsedObject)
           case a: InternalException => a
         }
       )
@@ -136,7 +158,7 @@ object WebSocketStream {
     : Graph[FlowShape[In, InternalException], NotUsed] = {
     GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
-      val bufferSize = (pingTimeout / pingInterval).toInt
+      val bufferSize = (pingTimeout / pingInterval).toInt + 1
 
       val mainFlow = builder.add(
         Flow[In].buffer(size = bufferSize, OverflowStrategy.dropHead))
