@@ -16,6 +16,7 @@ object Settings {
       Circe.core,
       Circe.generic,
       Circe.parser,
+      Circe.shapes,
       Enumeratum.version,
       Akka.http,
       Akka.stream,

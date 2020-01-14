@@ -3,24 +3,18 @@ package com.github.BambooTuna.CryptoExchangeAPI.bitflyer
 import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Broadcast, Flow, RunnableGraph, Sink, Source}
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.BitflyerRealtimeAPIProtocol._
 import com.github.BambooTuna.CryptoExchangeAPI.core.domain.ApiAuth
-import com.github.BambooTuna.CryptoExchangeAPI.core.websocket.WebSocketStreamProtocol.{
-  ConnectionOpened,
-  InternalFlowObject,
-  ParsedMessage,
-  SendMessage
-}
-import com.github.BambooTuna.CryptoExchangeAPI.core.websocket.{
-  WebSocketStream,
-  WebSocketStreamOptions
-}
+import com.github.BambooTuna.CryptoExchangeAPI.core.websocket.WebSocketStreamProtocol.{ConnectionOpened, InternalFlowObject, SendMessage}
+import com.github.BambooTuna.CryptoExchangeAPI.core.websocket.{WebSocketStream, WebSocketStreamOptions}
 
 import scala.concurrent.ExecutionContextExecutor
 import io.circe._
 import io.circe.syntax._
 import io.circe.generic.auto._
+import io.circe.shapes._
+import shapeless._
 
 object BitflyerRealtimeAPI {
   def apply(apiAuth: ApiAuth)(
@@ -49,37 +43,46 @@ class BitflyerRealtimeAPI(apiAuth: Option[ApiAuth])(
   private val (ws: ActorRef, source: Source[InternalFlowObject, NotUsed]) =
     WebSocketStream.generateWebSocketFlowGraph(options)
 
-  def runBySink(sink: Sink[String, Any]): Unit = {
-    val completeSink = Sink.foreach[ConnectionOpened.type] { _ =>
-      println("runBySink ConnectionOpened")
-      apiAuth
-        .map(a => authMessage(a, id = 1))
-        .foreach(sendMessage)
-    }
-    val runner = source via WebSocketStream.addCompleteSink(completeSink) to sink
+  def runBySink(sink: Sink[JsonRpc, Any]): Unit = {
+    val completeSink = Sink.foreach[ConnectionOpened.type] { _ => apiAuth.foreach(a => authMessage(a, id = 1)) }
+    val runner = source via WebSocketStream.addCompleteSink(completeSink) via Flow[String].map(messageParser) to sink
     runner.run()
   }
 
-  def sendMessage(message: String): Unit = {
-    println(SendMessage(message))
+  def sendMessage(message: String): Unit =
     ws ! SendMessage(message)
-  }
 
-  def messageParser(message: String): ReceivedChannelMessage[ExecutionsChannelParams] = {
-    parser.decode[ReceivedChannelMessage[ExecutionsChannelParams]](message).right.get
-//    for {
-//      json <- parser.parse(message)
-//      action <- json.hcursor.downField("params").downField("message").as[List[LightningExecutions]]
-//    } yield ()
-  }
+  def sendMessage(messages: Seq[String]): Unit =
+    messages.foreach(sendMessage)
 
-  def subscribeMessage(channel: Channel, id: Option[Int] = None): String =
+  def subscribeMessage(channels: (Channel, Option[Int])*): Unit =
+    sendMessage(createSubscribeMessage(channels = channels))
+
+  def authMessage(apiAuth: ApiAuth, id: Int): Unit =
+    sendMessage(createAuthMessage(apiAuth, id))
+
+  protected def createSubscribeMessage(channel: Channel, id: Option[Int] = None): String =
     SubscribeCommand[Channel](method = "subscribe", params = channel, id = id).asJson.noSpaces
 
-  def authMessage(apiAuth: ApiAuth, id: Int): String =
+  protected def createSubscribeMessage(channels: Seq[(Channel, Option[Int])]): Seq[String] =
+    channels.map(a => createSubscribeMessage(a._1, a._2))
+
+  protected def createAuthMessage(apiAuth: ApiAuth, id: Int): String =
     SubscribeCommand[SubscribeAuthParams](method = "auth",
                                           params =
                                             SubscribeAuthParams.create(apiAuth),
                                           id = Some(id)).asJson.noSpaces
+
+  protected def messageParser(message: String): JsonRpc = {
+    parser.decode[JsonrpcEvent](message) match {
+      case Right(Inl(v)) => v
+      case Right(Inr(Inl(v))) => v
+      case Right(Inr(Inr(Inl(v)))) => v
+      case Left(_) => message match {
+        case "ConnectionOpened" => BitflyerRealtimeAPIProtocol.ConnectionOpened
+        case other => ParseError(other)
+      }
+    }
+  }
 
 }
