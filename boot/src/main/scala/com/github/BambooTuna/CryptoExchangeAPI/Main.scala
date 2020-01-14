@@ -5,6 +5,7 @@ import akka.stream._
 import akka.stream.scaladsl._
 import com.github.BambooTuna.CryptoExchangeAPI.bitflyer._
 import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.BitflyerRealtimeAPIProtocol._
+import com.github.BambooTuna.CryptoExchangeAPI.core.domain.ApiAuth
 
 import scala.concurrent.ExecutionContextExecutor
 
