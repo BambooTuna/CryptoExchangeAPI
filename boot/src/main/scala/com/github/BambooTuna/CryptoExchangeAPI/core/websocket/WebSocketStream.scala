@@ -71,7 +71,7 @@ object WebSocketStream {
       val parsedMessageFilterFlow = builder.add(
         Flow[InternalFlowObject].collect {
           case ParsedMessage(value) => value
-          case ConnectionOpened => "ConnectionOpened"
+          case ConnectionOpened     => "ConnectionOpened"
         }
       )
       val completeFilterFlow = Flow[InternalFlowObject]

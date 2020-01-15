@@ -1,6 +1,6 @@
-package com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol
+package com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.core
 
-import enumeratum.values._
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 
 object BitflyerEnumDefinition {
 
@@ -22,6 +22,22 @@ object BitflyerEnumDefinition {
 
     case object Limit extends OrderType("LIMIT")
     case object Market extends OrderType("MARKET")
+
+    val values = findValues
+  }
+
+  sealed abstract class OrderEventType(val value: String)
+      extends StringEnumEntry
+  case object OrderEventType
+      extends StringEnum[OrderEventType]
+      with StringCirceEnum[OrderEventType] {
+
+    case object ORDER extends OrderEventType("ORDER")
+    case object ORDER_FAILED extends OrderEventType("ORDER_FAILED")
+    case object CANCEL extends OrderEventType("CANCEL")
+    case object CANCEL_FAILED extends OrderEventType("CANCEL_FAILED")
+    case object EXECUTION extends OrderEventType("EXECUTION")
+    case object EXPIRE extends OrderEventType("EXPIRE")
 
     val values = findValues
   }

@@ -4,10 +4,18 @@ import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
-import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.BitflyerRealtimeAPIProtocol._
+import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.realtime.BitflyerRealtimeAPIProtocol._
+import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.realtime.BitflyerRealtimeAPIProtocol
 import com.github.BambooTuna.CryptoExchangeAPI.core.domain.ApiAuth
-import com.github.BambooTuna.CryptoExchangeAPI.core.websocket.WebSocketStreamProtocol.{ConnectionOpened, InternalFlowObject, SendMessage}
-import com.github.BambooTuna.CryptoExchangeAPI.core.websocket.{WebSocketStream, WebSocketStreamOptions}
+import com.github.BambooTuna.CryptoExchangeAPI.core.websocket.WebSocketStreamProtocol.{
+  ConnectionOpened,
+  InternalFlowObject,
+  SendMessage
+}
+import com.github.BambooTuna.CryptoExchangeAPI.core.websocket.{
+  WebSocketStream,
+  WebSocketStreamOptions
+}
 
 import scala.concurrent.ExecutionContextExecutor
 import io.circe._
@@ -44,8 +52,11 @@ class BitflyerRealtimeAPI(apiAuth: Option[ApiAuth])(
     WebSocketStream.generateWebSocketFlowGraph(options)
 
   def runBySink(sink: Sink[JsonRpc, Any]): Unit = {
-    val completeSink = Sink.foreach[ConnectionOpened.type] { _ => apiAuth.foreach(a => authMessage(a, id = 1)) }
-    val runner = source via WebSocketStream.addCompleteSink(completeSink) via Flow[String].map(messageParser) to sink
+    val completeSink = Sink.foreach[ConnectionOpened.type] { _ =>
+      apiAuth.foreach(a => authMessage(a, id = 1))
+    }
+    val runner = source via WebSocketStream.addCompleteSink(completeSink) via Flow[
+      String].map(messageParser) to sink
     runner.run()
   }
 
@@ -61,10 +72,12 @@ class BitflyerRealtimeAPI(apiAuth: Option[ApiAuth])(
   def authMessage(apiAuth: ApiAuth, id: Int): Unit =
     sendMessage(createAuthMessage(apiAuth, id))
 
-  protected def createSubscribeMessage(channel: Channel, id: Option[Int] = None): String =
+  protected def createSubscribeMessage(channel: Channel,
+                                       id: Option[Int] = None): String =
     SubscribeCommand[Channel](method = "subscribe", params = channel, id = id).asJson.noSpaces
 
-  protected def createSubscribeMessage(channels: Seq[(Channel, Option[Int])]): Seq[String] =
+  protected def createSubscribeMessage(
+      channels: Seq[(Channel, Option[Int])]): Seq[String] =
     channels.map(a => createSubscribeMessage(a._1, a._2))
 
   protected def createAuthMessage(apiAuth: ApiAuth, id: Int): String =
@@ -75,13 +88,15 @@ class BitflyerRealtimeAPI(apiAuth: Option[ApiAuth])(
 
   protected def messageParser(message: String): JsonRpc = {
     parser.decode[JsonrpcEvent](message) match {
-      case Right(Inl(v)) => v
-      case Right(Inr(Inl(v))) => v
+      case Right(Inl(v))           => v
+      case Right(Inr(Inl(v)))      => v
       case Right(Inr(Inr(Inl(v)))) => v
-      case Left(_) => message match {
-        case "ConnectionOpened" => BitflyerRealtimeAPIProtocol.ConnectionOpened
-        case other => ParseError(other)
-      }
+      case _ =>
+        message match {
+          case "ConnectionOpened" =>
+            BitflyerRealtimeAPIProtocol.ConnectionOpened
+          case other => ParseError(other)
+        }
     }
   }
 

@@ -5,16 +5,14 @@ import akka.http.scaladsl.model.HttpMethods
 import akka.stream.Materializer
 import cats.Id
 import cats.data.{EitherT, Kleisli}
-import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.SendChildOrder
+import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.rest.SendChildOrder
 import com.github.BambooTuna.CryptoExchangeAPI.core.domain.ApiAuth
 import com.github.BambooTuna.CryptoExchangeAPI.core.http.{
   HttpInternalException,
   HttpInterpreter
 }
-
 import io.circe.syntax._
 import io.circe.generic.auto._
-
 import monix.eval.Task
 
 class BitflyerRestAPI {

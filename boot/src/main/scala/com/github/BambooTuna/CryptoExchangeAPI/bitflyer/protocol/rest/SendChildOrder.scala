@@ -1,6 +1,6 @@
-package com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol
+package com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.rest
 
-import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.BitflyerEnumDefinition.{
+import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.core.BitflyerEnumDefinition.{
   OrderType,
   ProductCode,
   Side,
