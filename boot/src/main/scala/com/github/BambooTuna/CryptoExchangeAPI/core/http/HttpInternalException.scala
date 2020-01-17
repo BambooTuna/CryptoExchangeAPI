@@ -1,18 +1,13 @@
 package com.github.BambooTuna.CryptoExchangeAPI.core.http
 
 sealed trait HttpInternalException {
-  val message: String
+  val errorMessage: String
 }
 
-case class FetchOriginEntityDataException(message: String)
-    extends HttpInternalException
-case class DecodeResponseBodyException(message: String,
-                                       statusCode: Int,
-                                       body: Option[String] = None)
-    extends HttpInternalException
-case class UnmarshalToStringException(message: String,
-                                      statusCode: Int,
-                                      body: Option[String] = None)
-    extends HttpInternalException
-case class HttpSingleRequestException(message: String)
-    extends HttpInternalException
+case class UnmarshalToStringException(statusCode: Int, errorMessage: String) extends HttpInternalException
+
+case class HttpSingleRequestException(errorMessage: String) extends HttpInternalException
+
+case class DecodeResponseBodyException(statusCode: Int, originBody: String, errorMessage: String) extends HttpInternalException
+
+case class BadResponseStatusCodeException(statusCode: Int, originBody: String, errorMessage: String) extends HttpInternalException
