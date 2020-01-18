@@ -10,3 +10,7 @@ $ sbt publishLocal
 ```
 
 3. Push to repository(master branch)
+
+
+## Sample
+[Usage](https://github.com/BambooTuna/CryptoExchangeAPI/blob/master/boot/src/main/scala/com/github/BambooTuna/CryptoExchangeAPI/Main.scala)

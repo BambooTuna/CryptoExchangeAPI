@@ -127,7 +127,10 @@ object WebSocketStream {
             case ConnectionOpened => Future.successful(ConnectionOpened)
           }
           .mapAsync(parallelism = 16)(identity)
-          .filterNot(_ == ParsedMessage(options.pongData))
+          .filterNot {
+            case ParsedMessage(v) => v.contains(options.pongData)
+            case _ => false
+          }
       )
 
       val callBackFilterMapFlow = builder.add(
