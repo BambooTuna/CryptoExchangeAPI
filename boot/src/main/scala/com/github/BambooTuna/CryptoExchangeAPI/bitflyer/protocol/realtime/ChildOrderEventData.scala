@@ -18,7 +18,7 @@ case class ChildOrderEventData(product_code: ProductCode,
                                size: Option[BigDecimal],
                                expire_date: Option[String],
                                reason: Option[String],
-                               exec_id: Option[String],
+                               exec_id: Option[Long],
                                commission: Option[BigDecimal],
                                sfd: Option[BigDecimal]) {
   require(

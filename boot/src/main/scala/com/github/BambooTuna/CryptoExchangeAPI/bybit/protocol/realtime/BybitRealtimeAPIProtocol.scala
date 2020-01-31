@@ -1,9 +1,17 @@
 package com.github.BambooTuna.CryptoExchangeAPI.bybit.protocol.realtime
 
-import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.realtime.BitflyerRealtimeAPIProtocol.SubscribeAuthParams
+import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.realtime.BitflyerRealtimeAPIProtocol.{
+  BitflyerChannel,
+  SubscribeAuthParams
+}
+import com.github.BambooTuna.CryptoExchangeAPI.bybit.BybitRealtimeAPI
 import com.github.BambooTuna.CryptoExchangeAPI.core.domain.ApiAuth
+import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPI.Channel
+import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPIResponseProtocol.ParsedJsonResponse
+import io.circe.{Encoder, Json}
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
+import shapeless._
 
 object BybitRealtimeAPIProtocol {
 
@@ -27,5 +35,19 @@ object BybitRealtimeAPIProtocol {
           l + Integer.toString((r & 0xff) + 0x100, 16).substring(1))
     }
   }
+
+  sealed class BybitChannel(val channel: String,
+                            val symbol: Option[String] = None)
+      extends Channel
+
+  implicit val encodeUser: Encoder[BybitChannel] =
+    Encoder.instance[BybitChannel](a =>
+      Json.fromString(s"${a.channel}${a.symbol.map("." + _).getOrElse("")}"))
+
+  case class SignatureResult(success: Boolean) extends ParsedJsonResponse
+  case class ReceivedChannelMessage[Params](topic: String, data: List[Params])
+      extends ParsedJsonResponse
+  type JsonEvent =
+    SignatureResult :+: ReceivedChannelMessage[TradeData] :+: CNil
 
 }
