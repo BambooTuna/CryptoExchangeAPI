@@ -129,7 +129,7 @@ object WebSocketStream {
           .mapAsync(parallelism = 16)(identity)
           .filterNot {
             case ParsedMessage(v) => v.contains(options.pongData)
-            case _ => false
+            case _                => false
           }
       )
 

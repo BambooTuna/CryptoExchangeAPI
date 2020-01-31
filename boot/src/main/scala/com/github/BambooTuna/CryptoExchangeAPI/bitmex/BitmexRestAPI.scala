@@ -5,9 +5,7 @@ import com.github.BambooTuna.CryptoExchangeAPI.core.rest.ExchangeRestAPI
 
 import io.circe.generic.auto._
 
-class BitmexRestAPI(apiAuth: ApiAuth) extends BitmexRestAPICore {
-
-}
+class BitmexRestAPI(apiAuth: ApiAuth) extends BitmexRestAPICore {}
 
 object BitmexRestAPI {
   implicit val bitmexRestAPI = new ExchangeRestAPI[BitmexRestAPI] {

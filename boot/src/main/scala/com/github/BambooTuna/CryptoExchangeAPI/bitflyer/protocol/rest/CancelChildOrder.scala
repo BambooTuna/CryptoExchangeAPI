@@ -4,7 +4,7 @@ import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.core.BitflyerEn
 
 object CancelChildOrder {
   case class Request(
-                      product_code: ProductCode,
-                      child_order_acceptance_id: String
-                    )
+      product_code: ProductCode,
+      child_order_acceptance_id: String
+  )
 }

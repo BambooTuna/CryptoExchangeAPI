@@ -10,10 +10,11 @@ trait BitmexRestAPICore extends Exchange {
     EndPoint(scheme = "https", host = "api.bitflyer.com", port = 443)
 
   override def generate(
-                         method: HttpMethod,
-                         path: String,
-                         queryString: Option[String] = None,
-                         entity: Option[String] = None,
-                         headers: Map[String, String] = Map.empty): Reader[ApiAuth, HttpRequest] = ???
+      method: HttpMethod,
+      path: String,
+      queryString: Option[String] = None,
+      entity: Option[String] = None,
+      headers: Map[String, String] = Map.empty): Reader[ApiAuth, HttpRequest] =
+    ???
 
 }

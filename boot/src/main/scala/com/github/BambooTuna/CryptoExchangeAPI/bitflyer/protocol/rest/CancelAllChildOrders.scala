@@ -4,6 +4,6 @@ import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.core.BitflyerEn
 
 object CancelAllChildOrders {
   case class Request(
-                      product_code: ProductCode = ProductCode.FXBTCJPY
-                    )
+      product_code: ProductCode = ProductCode.FXBTCJPY
+  )
 }
