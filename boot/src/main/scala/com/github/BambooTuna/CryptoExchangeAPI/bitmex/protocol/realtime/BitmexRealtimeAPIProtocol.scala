@@ -2,19 +2,27 @@ package com.github.BambooTuna.CryptoExchangeAPI.bitmex.protocol.realtime
 
 import com.github.BambooTuna.CryptoExchangeAPI.bybit.protocol.realtime.BybitRealtimeAPIProtocol.SignatureResult
 import com.github.BambooTuna.CryptoExchangeAPI.core.domain.ApiAuth
+import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPI.Channel
+import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPIResponseProtocol.ParsedJsonResponse
+import io.circe._
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
-import shapeless.{:+:, CNil}
+import shapeless._
 
 object BitmexRealtimeAPIProtocol {
 
   case class SubscribeCommand[Params](op: String, args: Params)
+  case class SubscribeCommandOp(op: String)
 
   object SubscribeAuthParams {
-    def create(apiAuth: ApiAuth): List[String] = {
-      val timestamp = java.time.Instant.now().toEpochMilli + 1000
+    def create(apiAuth: ApiAuth): List[String :+: Long :+: CNil] = {
+      val timestamp = java.time.Instant.now().toEpochMilli + 5000
       val signature = HMACSHA256(s"GET/realtime$timestamp", apiAuth.secret)
-      List(apiAuth.key, timestamp.toString, signature)
+      List(
+        Coproduct[String :+: Long :+: CNil](apiAuth.key),
+        Coproduct[String :+: Long :+: CNil](timestamp),
+        Coproduct[String :+: Long :+: CNil](signature)
+      )
     }
 
     def HMACSHA256(text: String, secret: String): String = {
@@ -29,7 +37,28 @@ object BitmexRealtimeAPIProtocol {
     }
   }
 
+  sealed class BitmexChannel(val channel: String,
+                             val symbol: Option[String] = None)
+      extends Channel
+
+  implicit val encodeUser: Encoder[BitmexChannel] =
+    Encoder.instance[BitmexChannel](a =>
+      Json.fromString(s"${a.channel}${a.symbol.map(":" + _).getOrElse("")}"))
+
+  case class SignatureResult(success: Boolean, request: SubscribeCommandOp)
+      extends ParsedJsonResponse
+
+  case class ConnectionLimit(remaining: Long)
+  case class ConnectionInformation(limit: ConnectionLimit)
+      extends ParsedJsonResponse
+
+  case class ReceivedChannelMessage[Params](table: String,
+                                            action: String,
+                                            data: Params)
+      extends ParsedJsonResponse
+
   type BitmexJsonEvent =
-    SignatureResult :+: CNil
+    SignatureResult :+: ConnectionInformation :+: ReceivedChannelMessage[
+      List[TradeData]] :+: CNil
 
 }
