@@ -97,7 +97,9 @@ object WebSocketStream {
       val broadcast = builder.add(Broadcast[InternalFlowObject](3))
 
       val webSocketHandlerFlow = Flow[InternalFlowObject].collect {
-        case InternalException(e) => throw new Exception(e)
+        case e: InternalException =>
+          options.internalExceptionHandler(e)
+          throw new Exception(e.value)
         case m: SendMessage       => m
       }
 
