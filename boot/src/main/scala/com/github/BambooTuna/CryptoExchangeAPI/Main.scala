@@ -23,8 +23,7 @@ object Main extends App {
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
   val bitmexApiKey =
-    ApiAuth("key",
-            "secret")
+    ApiAuth("key", "secret")
   val ws = BitmexRealtimeAPI(Some(bitmexApiKey))
 
   val parsedMessageSink = Sink.foreach[ParsedJsonResponse] {
