@@ -2,17 +2,24 @@ package com.github.BambooTuna.CryptoExchangeAPI.bitmex
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
+import com.github.BambooTuna.CryptoExchangeAPI.bitmex.protocol.realtime.BitmexRealtimeAPIProtocol.BitmexJsonEvent
 import com.github.BambooTuna.CryptoExchangeAPI.core.domain.ApiAuth
-import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.{
-  RealtimeAPI,
-  RealtimeAPIResponseProtocol
-}
+import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPI
 import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPI.{
   Channel,
   RealtimeAPIOptions
 }
+import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPIResponseProtocol.{
+  ConnectionOpened,
+  ParseError,
+  ParsedJsonResponse
+}
 import com.github.BambooTuna.CryptoExchangeAPI.core.websocket.WebSocketStreamOptions
+
+import io.circe.generic.auto._
+import io.circe.shapes._
+import io.circe.parser
+import shapeless._
 
 import scala.concurrent.ExecutionContextExecutor
 
@@ -20,7 +27,7 @@ object BitmexRealtimeAPI {
 
   val defaultStreamOptions: WebSocketStreamOptions =
     WebSocketStreamOptions(
-      host = "wss://stream.bybit.com/realtime",
+      host = "wss://www.bitmex.com/realtime",
       pingData = """{"op":"ping"}""",
       pongData = """{"op":"ping","args":null}"""
     )
@@ -41,7 +48,16 @@ class BitmexRealtimeAPI(override val realtimeAPIOptions: RealtimeAPIOptions)(
 
   override protected def createAuthMessage(apiAuth: ApiAuth): String = ""
 
-  override protected def parseResponse(
-      message: String): RealtimeAPIResponseProtocol.ParsedJsonResponse = ???
+  override protected def parseResponse(message: String): ParsedJsonResponse = {
+    parser.decode[BitmexJsonEvent](message) match {
+      case Right(v) => Coproduct.unsafeGet(v).asInstanceOf[ParsedJsonResponse]
+      case Left(e) =>
+        message match {
+          case "ConnectionOpened" =>
+            ConnectionOpened
+          case other => ParseError(e.getMessage, other)
+        }
+    }
+  }
 
 }

@@ -1,10 +1,19 @@
 package com.github.BambooTuna.CryptoExchangeAPI.bybit.protocol.core
 
-import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.core.BitflyerEnumDefinition.ProductCode.findValues
-import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.core.BitflyerEnumDefinition.Side.findValues
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 
 object BybitEnumDefinition {
+
+  sealed abstract class EventType(val value: String) extends StringEnumEntry
+  case object EventType
+      extends StringEnum[EventType]
+      with StringCirceEnum[EventType] {
+
+    case object Delta extends EventType("delta")
+    case object Snapshot extends EventType("snapshot")
+
+    val values = findValues
+  }
 
   sealed abstract class ProductCode(val value: String) extends StringEnumEntry
   case object ProductCode

@@ -4,27 +4,25 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.github.BambooTuna.CryptoExchangeAPI.bybit.protocol.realtime.BybitRealtimeAPIProtocol.{
   BybitChannel,
-  JsonEvent,
+  BybitJsonEvent,
   SubscribeAuthParams,
   SubscribeCommand
 }
 import com.github.BambooTuna.CryptoExchangeAPI.core.domain.ApiAuth
 import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPI
-import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPI.{
-  Channel,
-  RealtimeAPIOptions
-}
+import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPI.RealtimeAPIOptions
 import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPIResponseProtocol.{
   ConnectionOpened,
   ParseError,
   ParsedJsonResponse
 }
 import com.github.BambooTuna.CryptoExchangeAPI.core.websocket.WebSocketStreamOptions
+
 import io.circe.syntax._
 import io.circe.generic.auto._
 import io.circe.shapes._
 import io.circe.parser
-import shapeless._
+import shapeless.Coproduct
 
 import scala.concurrent.ExecutionContextExecutor
 
@@ -52,11 +50,7 @@ class BybitRealtimeAPI(override val realtimeAPIOptions: RealtimeAPIOptions)(
 
   override protected def createSubscribeMessage(
       channel: BybitChannel): String = {
-    val a = SubscribeCommand[List[BybitChannel]](
-      op = "subscribe",
-      args = List(channel)).asJson.noSpaces
-    println(a)
-    a
+    SubscribeCommand[List[BybitChannel]](op = "subscribe", args = List(channel)).asJson.noSpaces
   }
 
   override protected def createAuthMessage(apiAuth: ApiAuth): String =
@@ -65,9 +59,8 @@ class BybitRealtimeAPI(override val realtimeAPIOptions: RealtimeAPIOptions)(
       args = SubscribeAuthParams.create(apiAuth)).asJson.noSpaces
 
   override protected def parseResponse(message: String): ParsedJsonResponse = {
-    parser.decode[JsonEvent](message) match {
-      case Right(Inl(v))      => v
-      case Right(Inr(Inl(v))) => v
+    parser.decode[BybitJsonEvent](message) match {
+      case Right(v) => Coproduct.unsafeGet(v).asInstanceOf[ParsedJsonResponse]
       case Left(e) =>
         message match {
           case "ConnectionOpened" =>

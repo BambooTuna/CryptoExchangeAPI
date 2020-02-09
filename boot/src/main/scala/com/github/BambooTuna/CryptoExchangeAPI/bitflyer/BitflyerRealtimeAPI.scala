@@ -2,11 +2,7 @@ package com.github.BambooTuna.CryptoExchangeAPI.bitflyer
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.realtime.BitflyerRealtimeAPIProtocol.{
-  BitflyerChannel,
-  _
-}
-import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.realtime.BitflyerRealtimeAPIProtocol
+import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.realtime.BitflyerRealtimeAPIProtocol._
 import com.github.BambooTuna.CryptoExchangeAPI.core.domain.ApiAuth
 import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPI
 import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPI.RealtimeAPIOptions
@@ -18,11 +14,11 @@ import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPIResponse
 import com.github.BambooTuna.CryptoExchangeAPI.core.websocket.WebSocketStreamOptions
 
 import scala.concurrent.ExecutionContextExecutor
-import io.circe._
 import io.circe.syntax._
 import io.circe.generic.auto._
 import io.circe.shapes._
-import shapeless._
+import io.circe.parser
+import shapeless.Coproduct
 
 object BitflyerRealtimeAPI {
 
@@ -59,10 +55,8 @@ class BitflyerRealtimeAPI(override val realtimeAPIOptions: RealtimeAPIOptions)(
                                           id = Some(1)).asJson.noSpaces
 
   override protected def parseResponse(message: String): ParsedJsonResponse = {
-    parser.decode[JsonrpcEvent](message) match {
-      case Right(Inl(v))           => v
-      case Right(Inr(Inl(v)))      => v
-      case Right(Inr(Inr(Inl(v)))) => v
+    parser.decode[BitflyerJsonEvent](message) match {
+      case Right(v) => Coproduct.unsafeGet(v).asInstanceOf[ParsedJsonResponse]
       case Left(e) =>
         message match {
           case "ConnectionOpened" =>

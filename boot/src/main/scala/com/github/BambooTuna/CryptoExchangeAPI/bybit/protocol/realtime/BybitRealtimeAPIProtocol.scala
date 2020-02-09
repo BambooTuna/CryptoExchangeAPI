@@ -1,10 +1,5 @@
 package com.github.BambooTuna.CryptoExchangeAPI.bybit.protocol.realtime
 
-import com.github.BambooTuna.CryptoExchangeAPI.bitflyer.protocol.realtime.BitflyerRealtimeAPIProtocol.{
-  BitflyerChannel,
-  SubscribeAuthParams
-}
-import com.github.BambooTuna.CryptoExchangeAPI.bybit.BybitRealtimeAPI
 import com.github.BambooTuna.CryptoExchangeAPI.core.domain.ApiAuth
 import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPI.Channel
 import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPIResponseProtocol.ParsedJsonResponse
@@ -45,9 +40,10 @@ object BybitRealtimeAPIProtocol {
       Json.fromString(s"${a.channel}${a.symbol.map("." + _).getOrElse("")}"))
 
   case class SignatureResult(success: Boolean) extends ParsedJsonResponse
-  case class ReceivedChannelMessage[Params](topic: String, data: List[Params])
+  case class ReceivedChannelMessage[Params](topic: String, data: Params)
       extends ParsedJsonResponse
-  type JsonEvent =
-    SignatureResult :+: ReceivedChannelMessage[TradeData] :+: CNil
+  type BybitJsonEvent =
+    SignatureResult :+: ReceivedChannelMessage[List[TradeData]] :+: ReceivedChannelMessage[
+      List[OrderBookData]] :+: ReceivedChannelMessage[OrderBooks] :+: CNil
 
 }

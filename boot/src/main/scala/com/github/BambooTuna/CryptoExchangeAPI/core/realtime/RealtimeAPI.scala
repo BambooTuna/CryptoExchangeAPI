@@ -9,16 +9,22 @@ import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPI.{
   Channel,
   RealtimeAPIOptions
 }
-import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPIResponseProtocol.ParsedJsonResponse
+import com.github.BambooTuna.CryptoExchangeAPI.core.realtime.RealtimeAPIResponseProtocol.{
+  ParseError,
+  ParsedJsonResponse
+}
 import com.github.BambooTuna.CryptoExchangeAPI.core.websocket.{
   WebSocketStream,
-  WebSocketStreamOptions
+  WebSocketStreamOptions,
+  WebSocketStreamProtocol
 }
 import com.github.BambooTuna.CryptoExchangeAPI.core.websocket.WebSocketStreamProtocol.{
-  ConnectionOpened,
   InternalFlowObject,
   SendMessage
 }
+import io.circe.generic.auto._
+import io.circe.parser
+import shapeless._
 
 import scala.concurrent.ExecutionContextExecutor
 
@@ -29,8 +35,9 @@ trait RealtimeAPI[C <: Channel] {
 
   val realtimeAPIOptions: RealtimeAPIOptions
 
-  private val completeSink: Sink[ConnectionOpened.type, Any] =
-    Sink.foreach[ConnectionOpened.type] { _ =>
+  private val completeSink
+    : Sink[WebSocketStreamProtocol.ConnectionOpened.type, Any] =
+    Sink.foreach[WebSocketStreamProtocol.ConnectionOpened.type] { _ =>
       realtimeAPIOptions.apiAuth.foreach(authentication)
     }
   private val (ws: ActorRef, source: Source[InternalFlowObject, NotUsed]) =

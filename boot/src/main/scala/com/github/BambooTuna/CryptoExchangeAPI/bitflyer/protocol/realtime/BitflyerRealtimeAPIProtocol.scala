@@ -78,7 +78,7 @@ object BitflyerRealtimeAPIProtocol {
   case class OrderEventsChannelParams(channel: String,
                                       message: List[ChildOrderEventData])
 
-  type JsonrpcEvent = SignatureResult :+: ReceivedChannelMessage[
+  type BitflyerJsonEvent = SignatureResult :+: ReceivedChannelMessage[
     ExecutionsChannelParams] :+: ReceivedChannelMessage[
     OrderEventsChannelParams] :+: CNil
 
